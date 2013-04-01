@@ -1,34 +1,35 @@
 Sub dspi_test()
     Dim filePicker As FileDialog
 
-'    Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
-'
-'    With filePicker
-'
-'        'setup File Dialog'
-'        .AllowMultiSelect = False
-'        .ButtonName = "Select"
-'        .InitialView = msoFileDialogViewList
-'        .Title = "Select File"
-'        .InitialFileName = "test"
-'
-'        'add filter for all files'
-'        With .Filters
-'        .Clear
-'        .Add "All Files", "*.*"
-'        End With
-'        .FilterIndex = 1
-'
-'        'display file dialog box'
-'        .Show
-'
-'     End With
-'    If filePicker.SelectedItems.Count > 0 Then
-'
-'        Dim selectedFile As String
-'        selectedFile = filePicker.SelectedItems(1)
-'
-'    End If
+    Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
+
+    With filePicker
+
+        'setup File Dialog'
+        .AllowMultiSelect = False
+        .ButtonName = "Select Turkije"
+        .InitialView = msoFileDialogViewList
+        .Title = "Select Turkije"
+'        .InitialFileName = ""
+
+        'add filter for all files'
+        With .Filters
+        .Clear
+        .Add "All Files", "*.xls*"
+        End With
+        .FilterIndex = 1
+
+        'display file dialog box'
+        .Show
+
+     End With
+    If filePicker.SelectedItems.Count > 0 Then
+
+        Dim selectedFile As String
+        selectedFile = filePicker.SelectedItems(1)
+
+    End If
+    
     Dim ws As Worksheet
     Dim rangeNom As String
     Dim nextRow As Long
@@ -45,12 +46,13 @@ Sub dspi_test()
     
     Dim f As Workbook
     
-    Set f = Workbooks.Open("c:\Users\dspirydz\Documents\ola\44_DIALOG 02 2013 LEDGER.xlsx")
+    Set f = Workbooks.Open(selectedFile)
     Dim active_f As Sheets
     
     Dim i As Integer
     
-    For Each rw In f.Worksheets("Sayfa1").Rows
+    For Each rw In f.Worksheets(1).Rows
+'    For Each rw In f.Worksheets("Sayfa1").Rows
         If IsEmpty(rw.Cells(1).Value) Then Exit For
         
         If IsEmpty(rw.Cells(8).Value) Then
@@ -61,9 +63,10 @@ Sub dspi_test()
             ws.Cells(a, 3) = rw.Cells(9).Value
             ws.Cells(a, 2) = rw.Cells(4).Value
             ws.Cells(a, 1) = 50
-            ws.Cells(a, 6).Value = rw.Cells(13).Value
 '            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
             If ws.Cells(a, 2) = 212100 Or ws.Cells(a, 2) = 212110 Or ws.Cells(a, 2) = 214401 Or ws.Cells(a, 2) = 212230 Then ws.Cells(a, 1).Value = 31
+            If rw.Cells(4).Value Like "5*" Then ws.Cells(a, 4) = "V0"
+            If rw.Cells(4).Value Like "5*" Then ws.Cells(a, 6).Value = rw.Cells(13).Value
             a = a + 1
         ElseIf IsNumeric(rw.Cells(8).Value) Then
 '            MsgBox "Debit!"
@@ -71,9 +74,11 @@ Sub dspi_test()
             ws.Cells(a, 3) = rw.Cells(8).Value
             ws.Cells(a, 1) = 40
             ws.Cells(a, 2) = rw.Cells(4).Value
-            ws.Cells(a, 6).Value = rw.Cells(13).Value
 '            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
             If ws.Cells(a, 2) = 212100 Or ws.Cells(a, 2) = 212110 Or ws.Cells(a, 2) = 214401 Or ws.Cells(a, 2) = 212230 Then ws.Cells(a, 1).Value = 21
+            If ws.Cells(a, 1).Value = 21 Then ws.Cells(a, 4) = "**"
+            If rw.Cells(4).Value Like "5*" Then ws.Cells(a, 4) = "V0"
+            If rw.Cells(4).Value Like "5*" Then ws.Cells(a, 6).Value = rw.Cells(13).Value
             a = a + 1
         Else
 '            MsgBox "Empty!"
