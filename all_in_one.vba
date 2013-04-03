@@ -1,8 +1,23 @@
+Const RES_PK = 1
+Const RES_ACCOUNT = 2
+Const RES_AMOUNT = 3
+Const RES_TAX_CODE = 4
+Const RES_COST_CENTER = 6
+Const RES_DESC = 11
+
 Function special_account(account_number As String) As Boolean
     If account_number = 212100 Or account_number = 212110 Or account_number = 214401 Or account_number = 212230 Then
         special_account = True
     Else
         special_account = False
+    End If
+End Function
+
+Function special_account_turkey(account_number As String) As Boolean
+    If InStr(account_number, ".") Then
+        special_account_turkey = True
+    Else
+        special_account_turkey = False
     End If
 End Function
 
@@ -115,8 +130,7 @@ Sub Greece()
 '    rangeNom = "PK"
     
     Dim a As Long
-    
-    a = ws.Range("A65000").End(xlUp).Row + 1
+    a = 13
     
     Dim f As Workbook
     
@@ -124,52 +138,53 @@ Sub Greece()
     Set f = Workbooks.Open(pick_file("Select Greece"), 0)
     Dim active_f As Sheets
     
-    Dim i As Integer
-    i = 0
+    Dim num_of_empty_rows As Integer
+    num_of_empty_rows = 0
     
     For Each rw In f.Worksheets(1).Rows
-        Const RES_ACCOUNT = 2
-        Const RES_TAX_CODE = 4
-        Const RES_DESC = 11
-        Const RES_COST_CENTER = 6
         Const DESC = 7 ' Description
-        Const GR_ACCOUNT = 5 'GL Account
+        Const ACCOUNT = 5 'GL Account
         Const COST_CENTER = 10
+        Const DEBIT = 8
+        Const CREDIT = 9
     
-        'If IsEmpty(rw.Cells(1).Value) Then Exit For
-        If i > 32000 Then Exit For
-                
-        If IsEmpty(rw.Cells(2).Value) Then
-'            MsgBox "Empty!"
-        ElseIf rw.Cells(8).Value = 0 Then
-'            MsgBox "Credit!"
-            ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
-            Range(ws.Cells(a, 1), ws.Cells(a, RES_DESC)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
-            ws.Cells(a, 3) = rw.Cells(9).Value
-            ws.Cells(a, RES_ACCOUNT) = rw.Cells(GR_ACCOUNT).Value
-            ws.Cells(a, 1) = 50
-            ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
-'            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
-            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Or ws.Cells(a, RES_ACCOUNT) = 214401 Or ws.Cells(a, RES_ACCOUNT) = 212230 Then ws.Cells(a, 1).Value = 31
-            ' TAX code is empty
-            a = a + 1
-        ElseIf IsNumeric(rw.Cells(8).Value) Then
-'            MsgBox "Debit!"
-            ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
-            Range(ws.Cells(a, 1), ws.Cells(a, RES_DESC)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
-            ws.Cells(a, 3) = rw.Cells(8).Value
-            ws.Cells(a, 1) = 40
-            ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
-            ws.Cells(a, RES_ACCOUNT) = rw.Cells(GR_ACCOUNT).Value
-'            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
-            If special_account(ws.Cells(a, RES_ACCOUNT)) Then ws.Cells(a, 1).Value = 21
-'            If ws.Cells(a, 1).Value = 21 Then ws.Cells(a, 4) = "**"
-            ' TAX code is empty
-            a = a + 1
+        If IsEmpty(rw.Cells(DEBIT)) And IsEmpty(rw.Cells(CREDIT)) Then
+            ' Max of 2 empty rows are allowed after each other
+            If num_of_empty_rows > 1 Then
+                Exit For
+            Else
+                num_of_empty_rows = num_of_empty_rows + 1
+            End If
         Else
-'            MsgBox "Empty!"
+            num_of_empty_rows = 0
         End If
-        i = i + 1
+        
+        If rw.Row > 2 Then 'For Greece we skip first 2 rows, will be fixed when dynamic row detection is implemented
+            If Not IsEmpty(rw.Cells(CREDIT)) And IsNumeric(rw.Cells(CREDIT)) And rw.Cells(CREDIT) <> 0 Then
+    '            MsgBox "Credit!"
+                ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
+                Range(ws.Cells(a, 1), ws.Cells(a, 15)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+                ws.Cells(a, RES_AMOUNT) = rw.Cells(CREDIT).Value
+                ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT).Value
+                ws.Cells(a, RES_PK) = 50
+                ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
+    '            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
+                If special_account(ws.Cells(a, RES_ACCOUNT)) Then ws.Cells(a, RES_PK).Value = 31
+                ' TAX code is empty
+                a = a + 1
+            ElseIf Not IsEmpty(rw.Cells(DEBIT)) And IsNumeric(rw.Cells(DEBIT)) And rw.Cells(DEBIT) <> 0 Then
+    '            MsgBox "Debit!"
+                ws.Cells(a, RES_DESC) = rw.Cells(DESC)
+                Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+                ws.Cells(a, RES_AMOUNT) = rw.Cells(DEBIT)
+                ws.Cells(a, RES_PK) = 40
+                ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER)
+                ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT)
+                If special_account(ws.Cells(a, RES_ACCOUNT)) Then ws.Cells(a, RES_PK).Value = 21
+                ' TAX code is empty
+                a = a + 1
+            End If
+        End If
     Next rw
 '    MsgBox f.Worksheets("Sayfa1").Cells(3, 8).Value
     
@@ -193,7 +208,85 @@ Sub ClearStatementData()
 End Sub
 
 Sub dspi_test()
-    Italy
+    Dim ws As Worksheet
+    Dim rangeNom As String
+    Dim nextRow As Long
+
+    Set base_book = ThisWorkbook
+    Set ws = ActiveSheet
+    rangeNom = "PK"
+    
+    'nextRow = ws.Columns'
+    Dim a As Long
+    
+    'a = ws.Range("A65000").End(xlUp).Row + 1
+    a = 13
+    
+    Dim f As Workbook
+    
+    Set f = Workbooks.Open(pick_file("Select Turkey"), 0)
+    Dim active_f As Sheets
+    
+    Dim num_of_empty_rows As Integer
+    num_of_empty_rows = 0
+    
+    Const ACCOUNT = 4 'GL Account
+    Const DESC = 7 ' Description
+    Const COST_CENTER = 14
+    Const DEBIT = 9
+    Const CREDIT = 10
+    
+    For Each rw In f.Worksheets(1).Rows
+        If IsEmpty(rw.Cells(DEBIT)) And IsEmpty(rw.Cells(CREDIT)) Then
+            ' Max of 2 empty rows are allowed after each other
+            If num_of_empty_rows > 1 Then
+                Exit For
+            Else
+                num_of_empty_rows = num_of_empty_rows + 1
+            End If
+        Else
+            num_of_empty_rows = 0
+        End If
+        
+        If IsNumeric(rw.Cells(CREDIT)) And rw.Cells(CREDIT) <> 0 Then
+'            MsgBox "Credit!"
+            Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+            ws.Cells(a, RES_DESC) = rw.Cells(DESC)
+            ws.Cells(a, RES_AMOUNT) = rw.Cells(CREDIT)
+            ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT)
+            ws.Cells(a, RES_PK) = 50
+            If special_account_turkey(ws.Cells(a, RES_ACCOUNT)) Then
+                ws.Cells(a, RES_PK) = 31
+                Dim split_account() As String
+                split_account = Split(ws.Cells(a, RES_ACCOUNT), ".")
+                ws.Cells(a, RES_ACCOUNT) = split_account(UBound(split_account))
+            End If
+            If rw.Cells(ACCOUNT) Like "5*" Then
+                ws.Cells(a, RES_TAX_CODE) = "V0"
+                ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER)
+            End If
+            a = a + 1
+        ElseIf IsNumeric(rw.Cells(DEBIT)) And rw.Cells(DEBIT) <> 0 Then
+'            MsgBox "Debit!"
+            Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+            ws.Cells(a, RES_DESC) = rw.Cells(DESC)
+            ws.Cells(a, RES_AMOUNT) = rw.Cells(DEBIT)
+            ws.Cells(a, RES_PK) = 40
+            ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT)
+            If special_account_turkey(ws.Cells(a, RES_ACCOUNT)) Then
+                ws.Cells(a, RES_PK) = 21
+                ws.Cells(a, RES_TAX_CODE) = "**"
+                'Dim split_account() As String
+                split_account = Split(ws.Cells(a, RES_ACCOUNT), ".")
+                ws.Cells(a, RES_ACCOUNT) = split_account(UBound(split_account))
+            End If
+            If rw.Cells(ACCOUNT) Like "5*" Then
+                ws.Cells(a, RES_TAX_CODE) = "V0"
+                ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER)
+            End If
+            a = a + 1
+        End If
+    Next rw
 End Sub
 
 Sub Italy()
@@ -228,39 +321,36 @@ Sub Italy()
     Dim f As Workbook
     Set f = Workbooks.Open(pick_file("Select Italy"), 0)
     
-    Dim i As Integer
-    i = 0
+    Dim num_of_empty_rows As Integer
+    num_of_empty_rows = 0
     
     For Each rw In f.Worksheets(1).Rows
-        Const RES_ACCOUNT = 2
-        Const RES_AMOUNT = 3
-        Const RES_TAX_CODE = 4
-        Const RES_DESC = 11
-        Const RES_COST_CENTER = 6
-        Const RES_PK = 1
         Const DESC = 8 ' Description
         Const DESC_1 = 7 ' Description to search in the vendors list
         Const ACCOUNT = 3 'GL Account
         Const COST_CENTER = 5
-        
         Const DEBIT = 10
         Const CREDIT = 11
     
-        'If IsEmpty(rw.Cells(1).Value) Then Exit For
-        If i > 32000 Then Exit For
-                
-        If i > 3 And IsEmpty(rw.Cells(DEBIT)) And IsEmpty(rw.Cells(CREDIT)) Then
-            Exit For
-        ElseIf rw.Cells(DEBIT).Value = 0 Then
+        If IsEmpty(rw.Cells(DEBIT)) And IsEmpty(rw.Cells(CREDIT)) Then
+            If num_of_empty_rows > 3 Then
+                Exit For
+            Else
+                num_of_empty_rows = num_of_empty_rows + 1
+            End If
+        Else
+            num_of_empty_rows = 0
+        End If
+        
+        If IsNumeric(rw.Cells(CREDIT)) And rw.Cells(CREDIT) <> 0 Then
 '            MsgBox "Credit!"
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
             ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
-            Range(ws.Cells(a, 1), ws.Cells(a, RES_DESC)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
-            ws.Cells(a, RES_AMOUNT) = rw.Cells(CREDIT).Value
-            ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT).Value
+            Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+            ws.Cells(a, RES_AMOUNT) = rw.Cells(CREDIT)
+            ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT)
             ws.Cells(a, RES_PK) = 50
-            ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
-'            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
+            ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER)
             If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                 ws.Cells(a, RES_PK).Value = 31
                 If Not vendors_file Is Nothing Then
@@ -269,8 +359,11 @@ Sub Italy()
                             ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
                             Exit For
                         End If
-                        If InStr(1, rw.Cells(DESC_1).Value, vendor_row.Cells(2).Value, vbTextCompare) > 0 Then
-                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1).Value
+                        If InStr(1, rw.Cells(DESC_1), vendor_row.Cells(2), vbTextCompare) > 0 Then
+                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
+                            Exit For
+                        ElseIf InStr(1, rw.Cells(DESC), vendor_row.Cells(2), vbTextCompare) > 0 Then
+                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
                             Exit For
                         End If
                     Next vendor_row
@@ -280,15 +373,15 @@ Sub Italy()
             End If
             ' TAX code is empty
             a = a + 1
-        ElseIf IsNumeric(rw.Cells(DEBIT).Value) Then
+        ElseIf IsNumeric(rw.Cells(DEBIT)) And rw.Cells(DEBIT) <> 0 Then
 '            MsgBox "Debit!"
-            ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
+            ws.Cells(a, RES_DESC) = rw.Cells(DESC)
             ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
-            Range(ws.Cells(a, 1), ws.Cells(a, RES_DESC)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
-            ws.Cells(a, RES_AMOUNT) = rw.Cells(DEBIT).Value
+            Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+            ws.Cells(a, RES_AMOUNT) = rw.Cells(DEBIT)
             ws.Cells(a, RES_PK) = 40
-            ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
-            ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT).Value
+            ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER)
+            ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT)
             If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                 ws.Cells(a, RES_PK).Value = 21
                 If Not vendors_file Is Nothing Then
@@ -300,6 +393,9 @@ Sub Italy()
                         If InStr(1, rw.Cells(DESC_1), vendor_row.Cells(2), vbTextCompare) > 0 Then
                             ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
                             Exit For
+                        ElseIf InStr(1, rw.Cells(DESC), vendor_row.Cells(2), vbTextCompare) > 0 Then
+                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
+                            Exit For
                         End If
                     Next vendor_row
                 Else
@@ -309,6 +405,5 @@ Sub Italy()
             ' TAX code is empty
             a = a + 1
         End If
-        i = i + 1
     Next rw
 End Sub
