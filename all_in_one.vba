@@ -5,6 +5,22 @@ Const RES_TAX_CODE = 4
 Const RES_COST_CENTER = 6
 Const RES_DESC = 11
 
+Sub fill_italy_vendor(ByRef account_cell As Range, ByVal desc_1 As Range, ByVal desc_2 As Range, ByRef vendors_list As Worksheet)
+    For Each vendor_row In vendors_list.Rows
+        If IsEmpty(vendor_row.Cells(2)) Then
+            account_cell.Interior.ColorIndex = 6
+            Exit For
+        End If
+        If InStr(1, desc_1, vendor_row.Cells(2), vbTextCompare) > 0 Then
+            account_cell = vendor_row.Cells(1)
+            Exit For
+        ElseIf InStr(1, desc_2, vendor_row.Cells(2), vbTextCompare) > 0 Then
+            account_cell = vendor_row.Cells(1)
+            Exit For
+        End If
+    Next vendor_row
+End Sub
+
 Function special_account(account_number As String) As Boolean
     If account_number = 212100 Or account_number = 212110 Or account_number = 214401 Or account_number = 212230 Then
         special_account = True
@@ -186,13 +202,7 @@ Sub Greece()
             End If
         End If
     Next rw
-'    MsgBox f.Worksheets("Sayfa1").Cells(3, 8).Value
-    
-'    For Each s In f.Worksheets
-'        MsgBox s.Name
-'    Next s
-     
-    
+    ActiveWorkbook.Close
 End Sub
 
 Sub ClearStatementData()
@@ -287,6 +297,8 @@ Sub dspi_test()
             a = a + 1
         End If
     Next rw
+    
+    ActiveWorkbook.Close
 End Sub
 
 Sub Italy()
@@ -326,7 +338,7 @@ Sub Italy()
     
     For Each rw In f.Worksheets(1).Rows
         Const DESC = 8 ' Description
-        Const DESC_1 = 7 ' Description to search in the vendors list
+        Const desc_1 = 7 ' Description to search in the vendors list
         Const ACCOUNT = 3 'GL Account
         Const COST_CENTER = 5
         Const DEBIT = 10
@@ -354,19 +366,7 @@ Sub Italy()
             If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                 ws.Cells(a, RES_PK).Value = 31
                 If Not vendors_file Is Nothing Then
-                    For Each vendor_row In vendors_list.Rows
-                        If IsEmpty(vendor_row.Cells(2).Value) Then
-                            ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
-                            Exit For
-                        End If
-                        If InStr(1, rw.Cells(DESC_1), vendor_row.Cells(2), vbTextCompare) > 0 Then
-                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
-                            Exit For
-                        ElseIf InStr(1, rw.Cells(DESC), vendor_row.Cells(2), vbTextCompare) > 0 Then
-                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
-                            Exit For
-                        End If
-                    Next vendor_row
+                    fill_italy_vendor ws.Cells(a, RES_ACCOUNT), rw.Cells(desc_1), rw.Cells(DESC), vendors_list
                 Else
                    ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
                 End If
@@ -385,25 +385,15 @@ Sub Italy()
             If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                 ws.Cells(a, RES_PK).Value = 21
                 If Not vendors_file Is Nothing Then
-                    For Each vendor_row In vendors_list.Rows
-                        If IsEmpty(vendor_row.Cells(2)) Then
-                            ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
-                            Exit For
-                        End If
-                        If InStr(1, rw.Cells(DESC_1), vendor_row.Cells(2), vbTextCompare) > 0 Then
-                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
-                            Exit For
-                        ElseIf InStr(1, rw.Cells(DESC), vendor_row.Cells(2), vbTextCompare) > 0 Then
-                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
-                            Exit For
-                        End If
-                    Next vendor_row
+                    fill_italy_vendor ws.Cells(a, RES_ACCOUNT), rw.Cells(desc_1), rw.Cells(DESC), vendors_list
                 Else
-                    ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
+                   ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
                 End If
             End If
             ' TAX code is empty
             a = a + 1
         End If
     Next rw
+    ActiveWorkbook.Close
+    If Not vendors_file Is Nothing Then ActiveWorkbook.Close
 End Sub
