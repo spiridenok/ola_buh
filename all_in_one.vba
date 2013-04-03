@@ -6,7 +6,7 @@ Function special_account(account_number As String) As Boolean
     End If
 End Function
 
-Sub Turkije()
+Function pick_file(prompt As String) As String
     Dim filePicker As FileDialog
 
     Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
@@ -15,9 +15,9 @@ Sub Turkije()
 
         'setup File Dialog'
         .AllowMultiSelect = False
-        .ButtonName = "Select Turkije"
+        .ButtonName = prompt
         .InitialView = msoFileDialogViewList
-        .Title = "Select Turkije"
+        .Title = prompt
 '        .InitialFileName = ""
 
         'add filter for all files'
@@ -32,11 +32,14 @@ Sub Turkije()
 
      End With
     If filePicker.SelectedItems.Count > 0 Then
-
-        Dim selectedFile As String
-        selectedFile = filePicker.SelectedItems(1)
-
+        pick_file = filePicker.SelectedItems(1)
+    Else
+        pick_file = ""
     End If
+
+End Function
+
+Sub Turkije()
     
     Dim ws As Worksheet
     Dim rangeNom As String
@@ -54,13 +57,12 @@ Sub Turkije()
     
     Dim f As Workbook
     
-    Set f = Workbooks.Open(selectedFile)
+    Set f = Workbooks.Open(pick_file("Select Turkey"))
     Dim active_f As Sheets
     
     Dim i As Integer
     
     For Each rw In f.Worksheets(1).Rows
-'    For Each rw In f.Worksheets("Sayfa1").Rows
         If IsEmpty(rw.Cells(1).Value) Then Exit For
         
         If IsEmpty(rw.Cells(8).Value) Then
@@ -103,36 +105,6 @@ Sub Turkije()
 End Sub
 
 Sub Greece()
-    Dim filePicker As FileDialog
-
-    Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
-
-    With filePicker
-
-        'setup File Dialog'
-        .AllowMultiSelect = False
-        .ButtonName = "Select Griekenland"
-        .InitialView = msoFileDialogViewList
-        .Title = "Select Greece"
-'        .InitialFileName = ""
-
-        'add filter for all files'
-        With .Filters
-        .Clear
-        .Add "All Files", "*.xls*"
-        End With
-        .FilterIndex = 1
-
-        'display file dialog box'
-        .Show
-
-     End With
-    If filePicker.SelectedItems.Count > 0 Then
-
-        Dim selectedFile As String
-        selectedFile = filePicker.SelectedItems(1)
-
-    End If
     
     Dim ws As Worksheet
 '    Dim rangeNom As String
@@ -149,7 +121,7 @@ Sub Greece()
     Dim f As Workbook
     
     ' 2nd parameter == 0 suppresses the "Update links" message
-    Set f = Workbooks.Open(selectedFile, 0)
+    Set f = Workbooks.Open(pick_file("Select Greece"), 0)
     Dim active_f As Sheets
     
     Dim i As Integer
@@ -172,7 +144,7 @@ Sub Greece()
         ElseIf rw.Cells(8).Value = 0 Then
 '            MsgBox "Credit!"
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
-            ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+            Range(ws.Cells(a, 1), ws.Cells(a, RES_DESC)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
             ws.Cells(a, 3) = rw.Cells(9).Value
             ws.Cells(a, RES_ACCOUNT) = rw.Cells(GR_ACCOUNT).Value
             ws.Cells(a, 1) = 50
@@ -184,7 +156,7 @@ Sub Greece()
         ElseIf IsNumeric(rw.Cells(8).Value) Then
 '            MsgBox "Debit!"
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
-            ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+            Range(ws.Cells(a, 1), ws.Cells(a, RES_DESC)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
             ws.Cells(a, 3) = rw.Cells(8).Value
             ws.Cells(a, 1) = 40
             ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
@@ -209,11 +181,13 @@ Sub Greece()
 End Sub
 
 Sub ClearStatementData()
-    For Each Cell In Range("A13:K1000").Cells
-        Cell.ClearContents
-        Cell.Interior.ColorIndex = 2
-        Cell.Borders.ColorIndex = 15
-    Next Cell
+    ' To speed up the process only used columns are cleared
+    For Each cell In Range("A13:F1000", "K13:K1000").Cells
+        cell.ClearContents
+        cell.Interior.ColorIndex = 2
+        cell.Borders.ColorIndex = 15
+        cell.Font.ColorIndex = 1
+    Next cell
     ActiveWorkbook.Save
     Range("A13").Select
 End Sub
@@ -223,37 +197,6 @@ Sub dspi_test()
 End Sub
 
 Sub Italy()
-    Dim filePicker As FileDialog
-
-    Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
-
-    With filePicker
-
-        'setup File Dialog'
-        .AllowMultiSelect = False
-        .ButtonName = "Select Italy"
-        .InitialView = msoFileDialogViewList
-        .Title = "Select Italy"
-'        .InitialFileName = ""
-
-        'add filter for all files'
-        With .Filters
-        .Clear
-        .Add "All Files", "*.xls*"
-        End With
-        .FilterIndex = 1
-
-        'display file dialog box'
-        .Show
-
-     End With
-    If filePicker.SelectedItems.Count > 0 Then
-
-        Dim selectedFile As String
-        selectedFile = filePicker.SelectedItems(1)
-
-    End If
-    
     Dim ws As Worksheet
     Set ws = ActiveSheet
     
@@ -263,35 +206,15 @@ Sub Italy()
     
     Dim vendors_file_path As String
     vendors_file_path = Application.ActiveWorkbook.Path + "\Vendors Italy.xlsx"
-    vendors_file_path = vendors_file_path + "bla"
+'    vendors_file_path = vendors_file_path + "bla"
     
     Dim vendors_file As Workbook
     If Dir(vendors_file_path) = "" Then
         MsgBox "File with Italy vendors is not found, please select a file (press 'Cancel' in the next file open dialog to continue without vendors list)"
-        Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
-    
-        With filePicker
-    
-            'setup File Dialog'
-            .AllowMultiSelect = False
-            .ButtonName = "Select Italy vendors list"
-            .InitialView = msoFileDialogViewList
-            .Title = "Select list"
-    '        .InitialFileName = ""
-    
-            'add filter for all files'
-            With .Filters
-            .Clear
-            .Add "All Files", "*.xls*"
-            End With
-            .FilterIndex = 1
-    
-            'display file dialog box'
-            .Show
-    
-         End With
-        If filePicker.SelectedItems.Count > 0 Then
-            Set vendors_file = Workbooks.Open(filePicker.SelectedItems(1))
+        file_path = pick_file("Select Italy Vendors")
+
+        If file_path <> "" Then
+            Set vendors_file = Workbooks.Open(file_path)
         End If
     Else
         Set vendors_file = Workbooks.Open(vendors_file_path)
@@ -303,7 +226,7 @@ Sub Italy()
     End If
     
     Dim f As Workbook
-    Set f = Workbooks.Open(selectedFile, 0)
+    Set f = Workbooks.Open(pick_file("Select Italy"), 0)
     
     Dim i As Integer
     i = 0
@@ -326,19 +249,13 @@ Sub Italy()
         'If IsEmpty(rw.Cells(1).Value) Then Exit For
         If i > 32000 Then Exit For
                 
-        If Not IsEmpty(rw.Cells(1).Value) Then
-'            MsgBox "Empty!"
-        ElseIf IsEmpty(rw.Cells(ACCOUNT).Value) Then
+        If i > 3 And IsEmpty(rw.Cells(DEBIT)) And IsEmpty(rw.Cells(CREDIT)) Then
             Exit For
         ElseIf rw.Cells(DEBIT).Value = 0 Then
 '            MsgBox "Credit!"
-            Dim b As String
-            Dim c As String
-            
-            b = rw.Cells(DESC).Value
-            c = ws.Cells(a, RES_DESC)
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
             ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+            Range(ws.Cells(a, 1), ws.Cells(a, RES_DESC)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
             ws.Cells(a, RES_AMOUNT) = rw.Cells(CREDIT).Value
             ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT).Value
             ws.Cells(a, RES_PK) = 50
@@ -367,6 +284,7 @@ Sub Italy()
 '            MsgBox "Debit!"
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
             ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
+            Range(ws.Cells(a, 1), ws.Cells(a, RES_DESC)).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
             ws.Cells(a, RES_AMOUNT) = rw.Cells(DEBIT).Value
             ws.Cells(a, RES_PK) = 40
             ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
@@ -375,12 +293,12 @@ Sub Italy()
                 ws.Cells(a, RES_PK).Value = 21
                 If Not vendors_file Is Nothing Then
                     For Each vendor_row In vendors_list.Rows
-                        If IsEmpty(vendor_row.Cells(2).Value) Then
+                        If IsEmpty(vendor_row.Cells(2)) Then
                             ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
                             Exit For
                         End If
-                        If InStr(1, rw.Cells(DESC_1).Value, vendor_row.Cells(2).Value, vbTextCompare) > 0 Then
-                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1).Value
+                        If InStr(1, rw.Cells(DESC_1), vendor_row.Cells(2), vbTextCompare) > 0 Then
+                            ws.Cells(a, RES_ACCOUNT) = vendor_row.Cells(1)
                             Exit For
                         End If
                     Next vendor_row
