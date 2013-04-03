@@ -1,3 +1,11 @@
+Function special_account(account_number As String) As Boolean
+    If account_number = 212100 Or account_number = 212110 Or account_number = 214401 Or account_number = 212230 Then
+        special_account = True
+    Else
+        special_account = False
+    End If
+End Function
+
 Sub Turkije()
     Dim filePicker As FileDialog
 
@@ -164,6 +172,7 @@ Sub Greece()
         ElseIf rw.Cells(8).Value = 0 Then
 '            MsgBox "Credit!"
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
+            ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
             ws.Cells(a, 3) = rw.Cells(9).Value
             ws.Cells(a, RES_ACCOUNT) = rw.Cells(GR_ACCOUNT).Value
             ws.Cells(a, 1) = 50
@@ -175,12 +184,13 @@ Sub Greece()
         ElseIf IsNumeric(rw.Cells(8).Value) Then
 '            MsgBox "Debit!"
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
+            ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
             ws.Cells(a, 3) = rw.Cells(8).Value
             ws.Cells(a, 1) = 40
             ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
             ws.Cells(a, RES_ACCOUNT) = rw.Cells(GR_ACCOUNT).Value
 '            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
-            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Or ws.Cells(a, RES_ACCOUNT) = 214401 Or ws.Cells(a, RES_ACCOUNT) = 212230 Then ws.Cells(a, 1).Value = 21
+            If special_account(ws.Cells(a, RES_ACCOUNT)) Then ws.Cells(a, 1).Value = 21
 '            If ws.Cells(a, 1).Value = 21 Then ws.Cells(a, 4) = "**"
             ' TAX code is empty
             a = a + 1
@@ -213,36 +223,36 @@ Sub dspi_test()
 End Sub
 
 Sub Italy()
-'    Dim filePicker As FileDialog
-'
-'    Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
-'
-'    With filePicker
-'
-'        'setup File Dialog'
-'        .AllowMultiSelect = False
-'        .ButtonName = "Select Italy"
-'        .InitialView = msoFileDialogViewList
-'        .Title = "Select Italy"
-''        .InitialFileName = ""
-'
-'        'add filter for all files'
-'        With .Filters
-'        .Clear
-'        .Add "All Files", "*.xls*"
-'        End With
-'        .FilterIndex = 1
-'
-'        'display file dialog box'
-'        .Show
-'
-'     End With
-'    If filePicker.SelectedItems.Count > 0 Then
-'
-'        Dim selectedFile As String
-'        selectedFile = filePicker.SelectedItems(1)
-'
-'    End If
+    Dim filePicker As FileDialog
+
+    Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
+
+    With filePicker
+
+        'setup File Dialog'
+        .AllowMultiSelect = False
+        .ButtonName = "Select Italy"
+        .InitialView = msoFileDialogViewList
+        .Title = "Select Italy"
+'        .InitialFileName = ""
+
+        'add filter for all files'
+        With .Filters
+        .Clear
+        .Add "All Files", "*.xls*"
+        End With
+        .FilterIndex = 1
+
+        'display file dialog box'
+        .Show
+
+     End With
+    If filePicker.SelectedItems.Count > 0 Then
+
+        Dim selectedFile As String
+        selectedFile = filePicker.SelectedItems(1)
+
+    End If
     
     Dim ws As Worksheet
     Set ws = ActiveSheet
@@ -293,7 +303,7 @@ Sub Italy()
     End If
     
     Dim f As Workbook
-    Set f = Workbooks.Open("c:\Users\dspirydz\Documents\ola\Italy Report journal vouchers Feb 2013.xlsx")
+    Set f = Workbooks.Open(selectedFile, 0)
     
     Dim i As Integer
     i = 0
@@ -328,12 +338,13 @@ Sub Italy()
             b = rw.Cells(DESC).Value
             c = ws.Cells(a, RES_DESC)
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
+            ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
             ws.Cells(a, RES_AMOUNT) = rw.Cells(CREDIT).Value
             ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT).Value
             ws.Cells(a, RES_PK) = 50
             ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
 '            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
-            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Or ws.Cells(a, RES_ACCOUNT) = 214401 Or ws.Cells(a, RES_ACCOUNT) = 212230 Then
+            If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                 ws.Cells(a, RES_PK).Value = 31
                 If Not vendors_file Is Nothing Then
                     For Each vendor_row In vendors_list.Rows
@@ -355,11 +366,12 @@ Sub Italy()
         ElseIf IsNumeric(rw.Cells(DEBIT).Value) Then
 '            MsgBox "Debit!"
             ws.Cells(a, RES_DESC) = rw.Cells(DESC).Value
+            ws.Cells(a, RES_DESC).Font.ColorIndex = rw.Cells(DESC).Font.ColorIndex
             ws.Cells(a, RES_AMOUNT) = rw.Cells(DEBIT).Value
             ws.Cells(a, RES_PK) = 40
             ws.Cells(a, RES_COST_CENTER) = rw.Cells(COST_CENTER).Value
             ws.Cells(a, RES_ACCOUNT) = rw.Cells(ACCOUNT).Value
-            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Or ws.Cells(a, RES_ACCOUNT) = 214401 Or ws.Cells(a, RES_ACCOUNT) = 212230 Then
+            If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                 ws.Cells(a, RES_PK).Value = 21
                 If Not vendors_file Is Nothing Then
                     For Each vendor_row In vendors_list.Rows
