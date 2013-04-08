@@ -1,9 +1,108 @@
+Const TURKEY = 1
+Const ITALY = 2
+Const GREECE = 3
+
 Const RES_PK = 1
 Const RES_ACCOUNT = 2
 Const RES_AMOUNT = 3
 Const RES_TAX_CODE = 4
 Const RES_COST_CENTER = 6
 Const RES_DESC = 11
+
+Function get_column_numbers(country As Integer) As CBaseCountry
+    Set get_column_numbers = New CTurkey 'CBaseCountry
+End Function
+
+Sub process(country As Integer)
+    Dim ws As Worksheet
+    Dim rangeNom As String
+    Dim nextRow As Long
+
+    Set ws = ThisWorkbook.Worksheets(1)
+
+    Dim f As Workbook
+    ' 2nd parameter == 0 suppresses the "Update links" message
+    Set f = Workbooks.Open(pick_file(get_prompt(country)), 0)
+
+    Dim a As Long
+    'a = ws.Range("A65000").End(xlUp).Row + 1
+    a = 13
+    
+    Dim num_of_empty_rows As Integer
+    num_of_empty_rows = 0
+    
+    Dim nums As CBaseCountry
+    Set nums = get_column_numbers(country)
+    
+    For Each rw In f.Worksheets(1).Rows
+        If IsEmpty(rw.Cells(nums.get_debit)) And IsEmpty(rw.Cells(nums.get_credit)) Then
+            ' Max of 2 empty rows are allowed after each other
+            If num_of_empty_rows > 1 Then
+                Exit For
+            Else
+                num_of_empty_rows = num_of_empty_rows + 1
+            End If
+        Else
+            num_of_empty_rows = 0
+        End If
+        
+        If IsNumeric(rw.Cells(nums.get_credit)) And rw.Cells(nums.get_credit) <> 0 Then
+'            MsgBox "Credit!"
+            Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(nums.get_desc).Font.ColorIndex
+            ws.Cells(a, RES_DESC) = rw.Cells(nums.get_desc)
+            ws.Cells(a, RES_AMOUNT) = rw.Cells(nums.get_credit)
+            ws.Cells(a, RES_ACCOUNT) = rw.Cells(nums.get_accout)
+            ws.Cells(a, RES_PK) = 50
+            If special_account_turkey(ws.Cells(a, RES_ACCOUNT)) Then
+                ws.Cells(a, RES_PK) = 31
+                Dim split_account() As String
+                split_account = Split(ws.Cells(a, RES_ACCOUNT), ".")
+                ws.Cells(a, RES_ACCOUNT) = split_account(UBound(split_account))
+            End If
+            If ws.Cells(a, RES_ACCOUNT) Like "5*" Then
+                ws.Cells(a, RES_TAX_CODE) = "V0"
+                ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+            End If
+            a = a + 1
+        ElseIf IsNumeric(rw.Cells(nums.get_debit)) And rw.Cells(nums.get_debit) <> 0 Then
+'            MsgBox "Debit!"
+            Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(nums.get_desc).Font.ColorIndex
+            ws.Cells(a, RES_DESC) = rw.Cells(nums.get_desc)
+            ws.Cells(a, RES_AMOUNT) = rw.Cells(nums.get_debit)
+            ws.Cells(a, RES_PK) = 40
+            ws.Cells(a, RES_ACCOUNT) = rw.Cells(nums.get_accout)
+            If special_account_turkey(ws.Cells(a, RES_ACCOUNT)) Then
+                ws.Cells(a, RES_PK) = 21
+                ws.Cells(a, RES_TAX_CODE) = "**"
+                split_account = Split(ws.Cells(a, RES_ACCOUNT), ".")
+                ws.Cells(a, RES_ACCOUNT) = split_account(UBound(split_account))
+            End If
+            If ws.Cells(a, RES_ACCOUNT) Like "5*" Then
+                ws.Cells(a, RES_TAX_CODE) = "V0"
+                ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+            End If
+            a = a + 1
+        End If
+    Next rw
+    
+    ActiveWorkbook.Close
+    
+End Sub
+
+Sub dspi_test()
+    process (TURKEY)
+End Sub
+
+Function get_prompt(country As Integer) As String
+    Select Case country
+        Case TURKEY
+            get_prompt = "Select Turkey"
+        Case ITALY
+            get_prompt = "Select Italy"
+        Case GREECE
+            get_prompt = "Select Greece"
+    End Select
+End Function
 
 Sub fill_italy_vendor(ByRef account_cell As Range, ByVal desc_1 As Range, ByVal desc_2 As Range, ByRef vendors_list As Worksheet)
     For Each vendor_row In vendors_list.Rows
@@ -48,7 +147,7 @@ Function pick_file(prompt As String) As String
         .AllowMultiSelect = False
         .ButtonName = prompt
         .InitialView = msoFileDialogViewList
-        .Title = prompt
+        .title = prompt
 '        .InitialFileName = ""
 
         'add filter for all files'
@@ -70,78 +169,9 @@ Function pick_file(prompt As String) As String
 
 End Function
 
-Sub Turkije()
-    
-    Dim ws As Worksheet
-    Dim rangeNom As String
-    Dim nextRow As Long
 
-    Set base_book = ThisWorkbook
-    Set ws = ActiveSheet
-    rangeNom = "PK"
+Sub GREECE_SUB()
     
-    'nextRow = ws.Columns'
-    Dim a As Long
-    
-    a = ws.Range("A65000").End(xlUp).Row + 1
-'    a = ActiveSheet.UsedRange.Rows.Count
-    
-    Dim f As Workbook
-    
-    Set f = Workbooks.Open(pick_file("Select Turkey"))
-    Dim active_f As Sheets
-    
-    Dim i As Integer
-    
-    For Each rw In f.Worksheets(1).Rows
-        If IsEmpty(rw.Cells(1).Value) Then Exit For
-        
-        If IsEmpty(rw.Cells(8).Value) Then
-'            MsgBox "Empty!"
-        ElseIf rw.Cells(8).Value = 0 Then
-'            MsgBox "Credit!"
-            ws.Cells(a, 11) = rw.Cells(6).Value
-            ws.Cells(a, 3) = rw.Cells(9).Value
-            ws.Cells(a, 2) = rw.Cells(4).Value
-            ws.Cells(a, 1) = 50
-'            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
-            If ws.Cells(a, 2) = 212100 Or ws.Cells(a, 2) = 212110 Or ws.Cells(a, 2) = 214401 Or ws.Cells(a, 2) = 212230 Then ws.Cells(a, 1).Value = 31
-            If rw.Cells(4).Value Like "5*" Then ws.Cells(a, 4) = "V0"
-            If rw.Cells(4).Value Like "5*" Then ws.Cells(a, 6).Value = rw.Cells(13).Value
-            a = a + 1
-        ElseIf IsNumeric(rw.Cells(8).Value) Then
-'            MsgBox "Debit!"
-            ws.Cells(a, 11) = rw.Cells(6).Value
-            ws.Cells(a, 3) = rw.Cells(8).Value
-            ws.Cells(a, 1) = 40
-            ws.Cells(a, 2) = rw.Cells(4).Value
-'            If Not IsEmpty(rw.Cells(15).Value) Then ws.Cells(a, 7).Value = rw.Cells(15).Value
-            If ws.Cells(a, 2) = 212100 Or ws.Cells(a, 2) = 212110 Or ws.Cells(a, 2) = 214401 Or ws.Cells(a, 2) = 212230 Then ws.Cells(a, 1).Value = 21
-            If ws.Cells(a, 1).Value = 21 Then ws.Cells(a, 4) = "**"
-            If rw.Cells(4).Value Like "5*" Then ws.Cells(a, 4) = "V0"
-            If rw.Cells(4).Value Like "5*" Then ws.Cells(a, 6).Value = rw.Cells(13).Value
-            a = a + 1
-        Else
-'            MsgBox "Empty!"
-        End If
-        i = i + 1
-    Next rw
-'    MsgBox f.Worksheets("Sayfa1").Cells(3, 8).Value
-    
-'    For Each s In f.Worksheets
-'        MsgBox s.Name
-'    Next s
-     
-    
-End Sub
-
-Sub Greece()
-    
-    Dim ws As Worksheet
-'    Dim rangeNom As String
-'    Dim nextRow As Long
-
-'    Set base_book = ThisWorkbook
     Set ws = ActiveSheet
 '    rangeNom = "PK"
     
@@ -152,7 +182,6 @@ Sub Greece()
     
     ' 2nd parameter == 0 suppresses the "Update links" message
     Set f = Workbooks.Open(pick_file("Select Greece"), 0)
-    Dim active_f As Sheets
     
     Dim num_of_empty_rows As Integer
     num_of_empty_rows = 0
@@ -217,7 +246,7 @@ Sub ClearStatementData()
     Range("A13").Select
 End Sub
 
-Sub dspi_test()
+Sub Turkije()
     Dim ws As Worksheet
     Dim rangeNom As String
     Dim nextRow As Long
@@ -235,7 +264,6 @@ Sub dspi_test()
     Dim f As Workbook
     
     Set f = Workbooks.Open(pick_file("Select Turkey"), 0)
-    Dim active_f As Sheets
     
     Dim num_of_empty_rows As Integer
     num_of_empty_rows = 0
@@ -301,7 +329,7 @@ Sub dspi_test()
     ActiveWorkbook.Close
 End Sub
 
-Sub Italy()
+Sub ITALY_SUB()
     Dim ws As Worksheet
     Set ws = ActiveSheet
     
