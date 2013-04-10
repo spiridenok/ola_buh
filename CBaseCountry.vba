@@ -4,20 +4,6 @@ Private debit As Integer
 Private cost_center As Integer
 Private desc As Integer
 
-'Public Function get_account() As Integer
-'End Function
-'
-'Public Function get_debit() As Integer
-'End Function
-'
-'Public Function get_credit() As Integer
-'End Function
-'
-'Public Function get_cost_center() As Integer
-'End Function
-'
-'Public Function get_desc() As Integer
-'End Function
 
 Public Function get_col_numbers(country As Integer)
     'Dim c As New CBaseCountry
@@ -27,6 +13,12 @@ Public Function get_col_numbers(country As Integer)
         get_cost_center = 14
         get_debit = 9
         get_credit = 10
+    ElseIf country = 2 Then
+        get_account = 5 'GL Account
+        get_desc = 7  ' Description
+        get_cost_center = 10
+        get_debit = 8
+        get_credit = 9
     ElseIf country = 3 Then
         get_account = 5 'GL Account
         get_desc = 7  ' Description
