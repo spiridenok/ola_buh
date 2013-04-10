@@ -9,29 +9,60 @@ Private cost_center As Integer
 Private desc As Integer
 Private alt_desc As Integer
 
-Public Function get_col_numbers(country As Integer)
-    'Dim c As New CBaseCountry
+Public Function get_col_numbers(country As Integer, rows As Range)
+    Dim debit_found As Boolean
+    Dim credit_found As Boolean
+    debit_found = False
+    credit_found = False
+    Dim found_row As Range
+    
+    For Each rw In rows
+        For Each cell In rw.Columns
+'            If UCase(cell.Value.Trim) = "DEBIT" Then debit_found = True
+'            If UCase(cell.Value.Trim) = "CREDIT" Then credit_found = True
+            If InStr(1, cell, "DEBIT", vbTextCompare) > 0 Then
+                debit_found = True
+                get_debit = cell.Column
+            End If
+            If InStr(1, cell, "CREDIT", vbTextCompare) > 0 Then
+                credit_found = True
+                get_credit = cell.Column
+            End If
+        If cell.Column > 20 Then Exit For
+        Next cell
+        
+        If debit_found And credit_found Then
+            MsgBox "Found on line " + CStr(rw.Row)
+            Set found_row = rw
+            Exit For
+        End If
+        
+        If rw.Row > 10 Then
+            MsgBox "Could not find debet/credit in the first 10 rows of a file. Make sure the right file is used."
+            Exit For
+        End If
+    Next rw
+    
+    For Each cell In found_row.Columns
     Select Case country
-    Case TURKEY
-        get_account = 4 'GL Account
-        get_desc = 7  ' Description
-        get_cost_center = 14
-        get_debit = 9
-        get_credit = 10
-    Case GREECE
-        get_account = 5 'GL Account
-        get_desc = 7  ' Description
-        get_cost_center = 10
-        get_debit = 8
-        get_credit = 9
-    Case ITALY
-        get_account = 3 'GL Account
-        get_desc = 8  ' Description
-        get_cost_center = 5
-        get_debit = 10
-        get_credit = 11
-        get_alt_desc = 7 ' Description to search in the vendors list
+        Case TURKEY
+            If InStr(1, cell, "DIALOG", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
+            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 And InStr(1, cell, "code", vbTextCompare) > 0 Then get_cost_center = cell.Column
+            If InStr(1, cell, "account", vbTextCompare) > 0 And InStr(1, cell, "name", vbTextCompare) > 0 Then get_desc = cell.Column
+        Case GREECE
+            If InStr(1, cell, "GL", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
+            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 Then get_cost_center = cell.Column
+            If InStr(1, cell, "description", vbTextCompare) > 0 And Len(cell) = Len("Description") Then get_desc = cell.Column
+        Case ITALY
+            If InStr(1, cell, "GL", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
+            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 Then get_cost_center = cell.Column
+            If InStr(1, cell, "description", vbTextCompare) > 0 And InStr(1, cell, "2", vbTextCompare) > 0 Then get_desc = cell.Column
+            If InStr(1, cell, "description", vbTextCompare) > 0 And InStr(1, cell, "1", vbTextCompare) > 0 Then get_alt_desc = cell.Column
     End Select
+    Next cell
+    
+        
+    
 End Function
 
 Property Get get_credit() As Integer
