@@ -20,6 +20,28 @@ Sub process(country As Integer)
     ' 2nd parameter == 0 suppresses the "Update links" message
     Set f = Workbooks.Open(pick_file(get_prompt(country)), 0)
 
+    If country = ITALY Then
+        Dim vendors_file_path As String
+        vendors_file_path = Application.ActiveWorkbook.Path + "\Vendors Italy.xlsx"
+        
+        Dim vendors_file As Workbook
+        If Dir(vendors_file_path) = "" Then
+            MsgBox "File with Italy vendors is not found, please select a file (press 'Cancel' in the next file open dialog to continue without vendors list)"
+            file_path = pick_file("Select Italy Vendors")
+    
+            If file_path <> "" Then
+                Set vendors_file = Workbooks.Open(file_path)
+            End If
+        Else
+            Set vendors_file = Workbooks.Open(vendors_file_path)
+        End If
+        
+        If Not vendors_file Is Nothing Then
+            Dim vendors_list As Worksheet
+            Set vendors_list = vendors_file.Worksheets(1)
+        End If
+    End If
+        
     Dim a As Long
     'a = ws.Range("A65000").End(xlUp).Row + 1
     a = 13
@@ -64,6 +86,15 @@ Sub process(country As Integer)
                         End If
                     Case GREECE
                         If special_account(ws.Cells(a, RES_ACCOUNT)) Then ws.Cells(a, RES_PK).Value = 31
+                    Case ITALY
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then
+                            ws.Cells(a, RES_PK).Value = 31
+                            If Not vendors_file Is Nothing Then
+                                fill_italy_vendor ws.Cells(a, RES_ACCOUNT), rw.Cells(nums.get_alt_desc), rw.Cells(nums.get_desc), vendors_list
+                            Else
+                               ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
+                            End If
+                        End If
                 End Select
                 a = a + 1
             ElseIf IsNumeric(rw.Cells(nums.get_debit)) And rw.Cells(nums.get_debit) <> 0 Then
@@ -87,6 +118,15 @@ Sub process(country As Integer)
                         End If
                     Case GREECE
                         If special_account(ws.Cells(a, RES_ACCOUNT)) Then ws.Cells(a, RES_PK).Value = 21
+                    Case ITALY
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then
+                            ws.Cells(a, RES_PK).Value = 21
+                            If Not vendors_file Is Nothing Then
+                                fill_italy_vendor ws.Cells(a, RES_ACCOUNT), rw.Cells(nums.get_alt_desc), rw.Cells(nums.get_desc), vendors_list
+                            Else
+                               ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
+                            End If
+                        End If
                 End Select
                 a = a + 1
             End If
@@ -94,12 +134,14 @@ Sub process(country As Integer)
     Next rw
     
     ActiveWorkbook.Close
+    If country = ITALY Then ActiveWorkbook.Close
     
 End Sub
 
 Sub dspi_test()
     'process (TURKEY)
-    process (GREECE)
+    'process (GREECE)
+    process (ITALY)
 End Sub
 
 Function get_prompt(country As Integer) As String
@@ -345,28 +387,7 @@ Sub ITALY_SUB()
     Dim a As Long
 '    a = ws.Range("A65000").End(xlUp).Row + 1
     a = 13
-    
-    Dim vendors_file_path As String
-    vendors_file_path = Application.ActiveWorkbook.Path + "\Vendors Italy.xlsx"
-'    vendors_file_path = vendors_file_path + "bla"
-    
-    Dim vendors_file As Workbook
-    If Dir(vendors_file_path) = "" Then
-        MsgBox "File with Italy vendors is not found, please select a file (press 'Cancel' in the next file open dialog to continue without vendors list)"
-        file_path = pick_file("Select Italy Vendors")
-
-        If file_path <> "" Then
-            Set vendors_file = Workbooks.Open(file_path)
-        End If
-    Else
-        Set vendors_file = Workbooks.Open(vendors_file_path)
-    End If
-    
-    If Not vendors_file Is Nothing Then
-        Dim vendors_list As Worksheet
-        Set vendors_list = vendors_file.Worksheets(1)
-    End If
-    
+        
     Dim f As Workbook
     Set f = Workbooks.Open(pick_file("Select Italy"), 0)
     
@@ -374,12 +395,7 @@ Sub ITALY_SUB()
     num_of_empty_rows = 0
     
     For Each rw In f.Worksheets(1).Rows
-        Const desc = 8 ' Description
         Const desc_1 = 7 ' Description to search in the vendors list
-        Const account = 3 'GL Account
-        Const cost_center = 5
-        Const debit = 10
-        Const credit = 11
     
         If IsEmpty(rw.Cells(debit)) And IsEmpty(rw.Cells(credit)) Then
             If num_of_empty_rows > 3 Then
