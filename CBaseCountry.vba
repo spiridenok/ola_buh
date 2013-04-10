@@ -32,7 +32,7 @@ Public Function get_col_numbers(country As Integer, rows As Range)
         Next cell
         
         If debit_found And credit_found Then
-            MsgBox "Found on line " + CStr(rw.Row)
+            'MsgBox "Found on line " + CStr(rw.Row)
             Set found_row = rw
             Exit For
         End If
@@ -61,7 +61,9 @@ Public Function get_col_numbers(country As Integer, rows As Range)
     End Select
     Next cell
     
-        
+    If get_account = 0 Then MsgBox "Did not find account"
+    If get_cost_center = 0 Then MsgBox "Did not find cost center"
+    If get_desc = 0 Then MsgBox "Did not find description"
     
 End Function
 
