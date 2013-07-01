@@ -20,28 +20,6 @@ Sub process(country As Integer)
     ' 2nd parameter == 0 suppresses the "Update links" message
     Set f = Workbooks.Open(pick_file(get_prompt(country)), 0)
 
-    If country = ITALY Then
-        Dim vendors_file_path As String
-        vendors_file_path = Application.ActiveWorkbook.Path + "\Vendors Italy.xlsx"
-        
-        Dim vendors_file As Workbook
-        If Dir(vendors_file_path) = "" Then
-            MsgBox "File with Italy vendors is not found, please select a file (press 'Cancel' in the next file open dialog to continue without vendors list)"
-            file_path = pick_file("Select Italy Vendors")
-    
-            If file_path <> "" Then
-                Set vendors_file = Workbooks.Open(file_path)
-            End If
-        Else
-            Set vendors_file = Workbooks.Open(vendors_file_path)
-        End If
-        
-        If Not vendors_file Is Nothing Then
-            Dim vendors_list As Worksheet
-            Set vendors_list = vendors_file.Worksheets(1)
-        End If
-    End If
-        
     Dim a As Long
     'a = ws.Range("A65000").End(xlUp).Row + 1
     a = 13
@@ -65,7 +43,9 @@ Sub process(country As Integer)
         End If
         
         If Not country = GREECE Or (rw.Row > 2 And country = GREECE) Then  'For Greece we skip first 2 rows, will be fixed when dynamic row detection is implemented
-            If IsNumeric(rw.Cells(nums.get_credit)) And rw.Cells(nums.get_credit) <> 0 Then
+            ' For Italy debet and credit have the same column number, so use the real value to distinguish.
+            If (country <> ITALY And IsNumeric(rw.Cells(nums.get_credit)) And rw.Cells(nums.get_credit) <> 0) Or _
+               (country = ITALY And Trim(rw.Cells(1)) = "50") Then
     '            MsgBox "Credit!"
                 Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(nums.get_desc).Font.ColorIndex
                 ws.Cells(a, RES_DESC) = rw.Cells(nums.get_desc)
@@ -97,23 +77,23 @@ Sub process(country As Integer)
                         End If
                     Case ITALY
                         ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+                        ws.Cells(a, RES_TAX_CODE) = "V0"
                         If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                             ws.Cells(a, RES_PK).Value = 31
-                            If Not vendors_file Is Nothing Then
-                                fill_italy_vendor ws.Cells(a, RES_ACCOUNT), rw.Cells(nums.get_alt_desc), rw.Cells(nums.get_desc), vendors_list
-                            Else
-                               ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
-                            End If
+                            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                            If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2445
                         End If
-                        If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
-                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
-                        End If
-                        If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
-                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
-                        End If
+'                        If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+'                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+'                        End If
+'                        If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+'                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+'                        End If
                 End Select
                 a = a + 1
-            ElseIf IsNumeric(rw.Cells(nums.get_debit)) And rw.Cells(nums.get_debit) <> 0 Then
+                End If
+            If (country <> ITALY And IsNumeric(rw.Cells(nums.get_debit)) And rw.Cells(nums.get_debit) <> 0) Or _
+               (country = ITALY And Trim(rw.Cells(1)) = "40") Then
     '            MsgBox "Debit!"
                 Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(nums.get_desc).Font.ColorIndex
                 ws.Cells(a, RES_DESC) = rw.Cells(nums.get_desc)
@@ -145,20 +125,18 @@ Sub process(country As Integer)
                         End If
                     Case ITALY
                         ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+                        ws.Cells(a, RES_TAX_CODE) = "V0"
                         If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                             ws.Cells(a, RES_PK).Value = 21
-                            If Not vendors_file Is Nothing Then
-                                fill_italy_vendor ws.Cells(a, RES_ACCOUNT), rw.Cells(nums.get_alt_desc), rw.Cells(nums.get_desc), vendors_list
-                            Else
-                               ws.Cells(a, RES_ACCOUNT).Interior.ColorIndex = 6
-                            End If
+                            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                            If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2445
                         End If
-                        If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
-                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
-                        End If
-                        If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
-                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
-                        End If
+'                        If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+'                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+'                        End If
+'                        If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+'                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+'                        End If
                 End Select
                 a = a + 1
             End If
@@ -166,7 +144,6 @@ Sub process(country As Integer)
     Next rw
     
     ActiveWorkbook.Close
-    If country = ITALY Then ActiveWorkbook.Close
     
 End Sub
 
