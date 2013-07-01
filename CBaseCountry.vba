@@ -38,7 +38,11 @@ Public Function get_col_numbers(country As Integer, rows As Range)
         End If
         
         If rw.Row > 10 Then
-            MsgBox "Could not find debet/credit in the first 10 rows of a file. Make sure the right file is used."
+            If country <> ITALY Then
+                MsgBox "Could not find debet/credit in the first 10 rows of a file. Make sure the right file is used."
+            Else
+                Set found_row = Range("A1:M1000")
+            End If
             Exit For
         End If
     Next rw
@@ -47,17 +51,23 @@ Public Function get_col_numbers(country As Integer, rows As Range)
     Select Case country
         Case TURKEY
             If InStr(1, cell, "DIALOG", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
-            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 And InStr(1, cell, "code", vbTextCompare) > 0 Then get_cost_center = cell.Column
+            If InStr(1, cell, "cost", vbTextCompare) > 0 And (InStr(1, cell, "center", vbTextCompare) > 0 Or InStr(1, cell, "centre", vbTextCompare) > 0) And InStr(1, cell, "code", vbTextCompare) > 0 Then get_cost_center = cell.Column
             If InStr(1, cell, "account", vbTextCompare) > 0 And InStr(1, cell, "name", vbTextCompare) > 0 Then get_desc = cell.Column
         Case GREECE
             If InStr(1, cell, "GL", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
             If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 Then get_cost_center = cell.Column
             If InStr(1, cell, "description", vbTextCompare) > 0 And Len(cell) = Len("Description") Then get_desc = cell.Column
         Case ITALY
-            If InStr(1, cell, "GL", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
-            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 Then get_cost_center = cell.Column
-            If InStr(1, cell, "description", vbTextCompare) > 0 And InStr(1, cell, "2", vbTextCompare) > 0 Then get_desc = cell.Column
-            If InStr(1, cell, "description", vbTextCompare) > 0 And InStr(1, cell, "1", vbTextCompare) > 0 Then get_alt_desc = cell.Column
+            get_debit = 3
+            get_credit = 3
+            get_account = 2
+            get_cost_center = 6
+            get_desc = 11
+            Exit For
+'            If InStr(1, cell, "GL", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
+'            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 Then get_cost_center = cell.Column
+'            If InStr(1, cell, "description", vbTextCompare) > 0 And InStr(1, cell, "2", vbTextCompare) > 0 Then get_desc = cell.Column
+'            If InStr(1, cell, "description", vbTextCompare) > 0 And InStr(1, cell, "1", vbTextCompare) > 0 Then get_alt_desc = cell.Column
     End Select
     Next cell
     
@@ -91,7 +101,6 @@ Public Property Let get_debit(val As Integer)
     debit = val
     
 End Property
-'
 
 Public Property Get get_cost_center() As Integer
     get_cost_center = cost_center
@@ -118,3 +127,32 @@ Public Property Let get_alt_desc(val As Integer)
     alt_desc = val
 End Property
 
+Public Sub fill_common_data(country As Integer, cost_center As Variant, ByRef account_cell As Range, ByRef cost_center_cell As Range, Optional ByRef tax_code_cell As Range)
+    Select Case country
+        Case GREECE
+            cost_center_cell = cost_center
+            If account_cell = 212100 Or account_cell = 212110 Then account_cell = 8809
+            If account_cell = 214401 Then account_cell = 2413
+            If (account_cell Like "5*" Or account_cell Like "4*") And IsEmpty(cost_center_cell) Then
+                cost_center_cell.Interior.ColorIndex = 3
+            End If
+            If Not account_cell Like "5*" And Not account_cell Like "4*" And Not IsEmpty(cost_center_cell) Then
+                cost_center_cell.Interior.ColorIndex = 3
+            End If
+            
+        Case ITALY
+            cost_center_cell = cost_center
+            If (account_cell Like "6*" Or account_cell Like "5*" Or account_cell Like "4*") And IsEmpty(cost_center_cell) Then
+                cost_center_cell.Interior.ColorIndex = 3
+            End If
+            If Not account_cell Like "6*" And Not account_cell Like "5*" And Not account_cell Like "4*" And Not IsEmpty(cost_center_cell) Then
+                cost_center_cell.Interior.ColorIndex = 3
+            End If
+        
+        Case TURKEY
+            If account_cell Like "5*" Then
+                tax_code_cell = "V0"
+                cost_center_cell = cost_center
+            End If
+    End Select
+End Sub
