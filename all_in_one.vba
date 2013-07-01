@@ -75,11 +75,10 @@ Sub process(country As Integer)
                 If ws.Cells(a, RES_ACCOUNT) = 113300 Or ws.Cells(a, RES_ACCOUNT) = 212230 Then ws.Cells(a, RES_ACCOUNT).Font.ColorIndex = 3
                 Select Case country
                     Case TURKEY
-                        If special_account_turkey(ws.Cells(a, RES_ACCOUNT)) Then
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                             ws.Cells(a, RES_PK) = 31
-                            Dim split_account() As String
-                            split_account = Split(ws.Cells(a, RES_ACCOUNT), ".")
-                            ws.Cells(a, RES_ACCOUNT) = split_account(UBound(split_account))
+                            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                            If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2413
                         End If
                         If ws.Cells(a, RES_ACCOUNT) Like "5*" Then
                             ws.Cells(a, RES_TAX_CODE) = "V0"
@@ -124,11 +123,10 @@ Sub process(country As Integer)
                 If ws.Cells(a, RES_ACCOUNT) = 113300 Or ws.Cells(a, RES_ACCOUNT) = 212230 Then ws.Cells(a, RES_ACCOUNT).Font.ColorIndex = 3
                 Select Case country
                     Case TURKEY
-                        If special_account_turkey(ws.Cells(a, RES_ACCOUNT)) Then
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                             ws.Cells(a, RES_PK) = 21
-                            ws.Cells(a, RES_TAX_CODE) = "**"
-                            split_account = Split(ws.Cells(a, RES_ACCOUNT), ".")
-                            ws.Cells(a, RES_ACCOUNT) = split_account(UBound(split_account))
+                            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                            If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2413
                         End If
                         If ws.Cells(a, RES_ACCOUNT) Like "5*" Then
                             ws.Cells(a, RES_TAX_CODE) = "V0"
@@ -267,3 +265,40 @@ Sub dspi_test()
     'process (ITALY)
 End Sub
 
+Sub SaveTurkeySub()
+    Dim objDialog As Variant
+    
+    objDialog = Application.GetSaveAsFilename()
+    
+    If InStr(1, objDialog, "xlsx", vbTextCompare) = 0 Then objDialog = objDialog + "xlsx"
+    
+    ActiveSheet.Range("A13:A1000").Sort key1:=Range("A13"), order1:=xlAscending
+    
+    Columns("A:A").Select
+    
+    Set cell = Selection.Find(what:="40", LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext)
+    
+    Range("A1", Cells(cell.Row - 1, 13)).Select
+    Selection.Copy
+    Workbooks.Add
+    ActiveSheet.Paste
+    ActiveSheet.Columns.AutoFit
+    ActiveSheet.Range("E5") = "TRY"
+    ActiveWorkbook.SaveAs Filename:=Replace(objDialog, ".xlsx", "_21_31.xlsx"), CreateBackup:=False
+    Application.DisplayAlerts = False
+    ActiveWorkbook.Close
+    Application.DisplayAlerts = True
+    
+    Union(Range("A1:M12"), Range(Cells(cell.Row, 1), "M1000")).Select
+    Selection.Copy
+    Workbooks.Add
+    ActiveSheet.Paste
+    ActiveSheet.Columns.AutoFit
+    ActiveSheet.Range("E5") = "TRY"
+    ActiveWorkbook.SaveAs Filename:=Replace(objDialog, ".xlsx", "_40_50.xlsx"), CreateBackup:=False
+    Application.DisplayAlerts = False
+    ActiveWorkbook.Close
+    Application.DisplayAlerts = True
+    
+    'Set Selection = Nothing
+End Sub
