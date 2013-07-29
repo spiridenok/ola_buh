@@ -16,9 +16,12 @@ Sub process(country As Integer)
 
     Set ws = ThisWorkbook.Worksheets(1)
 
+    Dim original_file As String: original_file = pick_file(get_prompt(country))
+    If original_file = "" Then Exit Sub
+    
     Dim f As Workbook
     ' 2nd parameter == 0 suppresses the "Update links" message
-    Set f = Workbooks.Open(pick_file(get_prompt(country)), 0)
+    Set f = Workbooks.Open(original_file, 0)
 
     Dim a As Long
     'a = ws.Range("A65000").End(xlUp).Row + 1
@@ -44,8 +47,7 @@ Sub process(country As Integer)
         
         If Not country = GREECE Or (rw.Row > 2 And country = GREECE) Then  'For Greece we skip first 2 rows, will be fixed when dynamic row detection is implemented
             ' For Italy debet and credit have the same column number, so use the real value to distinguish.
-            If (country <> ITALY And IsNumeric(rw.Cells(nums.get_credit)) And rw.Cells(nums.get_credit) <> 0) Or _
-               (country = ITALY And Trim(rw.Cells(1)) = "50") Then
+            If IsNumeric(rw.Cells(nums.get_credit)) And rw.Cells(nums.get_credit) <> 0 Then
     '            MsgBox "Credit!"
                 Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(nums.get_desc).Font.ColorIndex
                 ws.Cells(a, RES_DESC) = rw.Cells(nums.get_desc)
@@ -77,23 +79,21 @@ Sub process(country As Integer)
                         End If
                     Case ITALY
                         ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
-                        ws.Cells(a, RES_TAX_CODE) = "V0"
+                        'ws.Cells(a, RES_TAX_CODE) = "V0"
                         If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                             ws.Cells(a, RES_PK).Value = 31
                             If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
                             If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2445
                         End If
-'                        If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
-'                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
-'                        End If
-'                        If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
-'                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
-'                        End If
                 End Select
-                a = a + 1
+                If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                    ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
                 End If
-            If (country <> ITALY And IsNumeric(rw.Cells(nums.get_debit)) And rw.Cells(nums.get_debit) <> 0) Or _
-               (country = ITALY And Trim(rw.Cells(1)) = "40") Then
+                If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                    ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                End If
+                a = a + 1
+            ElseIf IsNumeric(rw.Cells(nums.get_debit)) And rw.Cells(nums.get_debit) <> 0 Then
     '            MsgBox "Debit!"
                 Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(nums.get_desc).Font.ColorIndex
                 ws.Cells(a, RES_DESC) = rw.Cells(nums.get_desc)
@@ -125,19 +125,19 @@ Sub process(country As Integer)
                         End If
                     Case ITALY
                         ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
-                        ws.Cells(a, RES_TAX_CODE) = "V0"
+                        'ws.Cells(a, RES_TAX_CODE) = "V0"
                         If special_account(ws.Cells(a, RES_ACCOUNT)) Then
                             ws.Cells(a, RES_PK).Value = 21
                             If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
                             If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2445
                         End If
-'                        If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
-'                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
-'                        End If
-'                        If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
-'                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
-'                        End If
                 End Select
+                If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                    ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                End If
+                If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                    ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                End If
                 a = a + 1
             End If
         End If
@@ -238,8 +238,8 @@ End Sub
 
 Sub dspi_test()
     'process (TURKEY)
-    process (GREECE)
-    'process (ITALY)
+    'process (GREECE)
+    process (ITALY)
 End Sub
 
 Sub SaveTurkeySub()
