@@ -269,7 +269,7 @@ Sub SaveTurkeySub()
     ActiveWorkbook.Close
     Application.DisplayAlerts = True
     
-    Union(Range("A1:M12"), Range(Cells(cell.Row, 1), "M1000")).Select
+    Union(Range("A1:M12"), Range(Cells(cell.Row, 1), "M2000")).Select
     Selection.Copy
     Workbooks.Add
     ActiveSheet.Paste
