@@ -2,118 +2,283 @@ Const TURKEY = 1
 Const ITALY = 2
 Const GREECE = 3
 
-Private credit As Integer
-Private account As Integer
-Private debit As Integer
-Private cost_center As Integer
-Private desc As Integer
-Private alt_desc As Integer
+Const RES_PK = 1
+Const RES_ACCOUNT = 2
+Const RES_AMOUNT = 3
+Const RES_TAX_CODE = 4
+Const RES_COST_CENTER = 6
+Const RES_DESC = 11
 
-Public Function get_col_numbers(country As Integer, rows As Range)
-    Dim debit_found As Boolean
-    Dim credit_found As Boolean
-    debit_found = False
-    credit_found = False
-    Dim found_row As Range
+Dim last_saved_is_turkey As Boolean
+
+Sub process(country As Integer)
+    Dim ws As Worksheet
+    Dim rangeNom As String
+    Dim nextRow As Long
+
+    Set ws = ThisWorkbook.Worksheets(1)
+
+    Dim original_file As String: original_file = pick_file(get_prompt(country))
+    If original_file = "" Then Exit Sub
     
-    For Each rw In rows
-        For Each cell In rw.Columns
-'            If UCase(cell.Value.Trim) = "DEBIT" Then debit_found = True
-'            If UCase(cell.Value.Trim) = "CREDIT" Then credit_found = True
-            If InStr(1, cell, "DEBIT", vbTextCompare) > 0 Then
-                debit_found = True
-                get_debit = cell.Column
+    Dim f As Workbook
+    ' 2nd parameter == 0 suppresses the "Update links" message
+    Set f = Workbooks.Open(original_file, 0)
+
+    Dim a As Long
+    'a = ws.Range("A65000").End(xlUp).Row + 1
+    a = 13
+    
+    Dim num_of_empty_rows As Integer
+    num_of_empty_rows = 0
+    
+    Dim nums As New CBaseCountry
+    nums.get_col_numbers country, f.Worksheets(1).rows
+    If country = TURKEY Then last_saved_is_turkey = True Else last_saved_is_turkey = False
+    
+    For Each rw In f.Worksheets(1).rows
+        If IsEmpty(rw.Cells(nums.get_debit)) And IsEmpty(rw.Cells(nums.get_credit)) Then
+            ' Max of 2 empty rows are allowed after each other
+            If num_of_empty_rows > 1 Then
+                Exit For
+            Else
+                num_of_empty_rows = num_of_empty_rows + 1
             End If
-            If InStr(1, cell, "CREDIT", vbTextCompare) > 0 Then
-                credit_found = True
-                get_credit = cell.Column
-            End If
-        If cell.Column > 20 Then Exit For
-        Next cell
-        
-        If debit_found And credit_found Then
-            'MsgBox "Found on line " + CStr(rw.Row)
-            Set found_row = rw
-            Exit For
+        Else
+            num_of_empty_rows = 0
         End If
         
-        If rw.Row > 10 Then
-            MsgBox "Could not find debet/credit in the first 10 rows of a file. Make sure the right file is used."
-            Exit For
+        If Not country = GREECE Or (rw.Row > 2 And country = GREECE) Then  'For Greece we skip first 2 rows, will be fixed when dynamic row detection is implemented
+            ' For Italy debet and credit have the same column number, so use the real value to distinguish.
+            If IsNumeric(rw.Cells(nums.get_credit)) And rw.Cells(nums.get_credit) <> 0 Then
+    '            MsgBox "Credit!"
+                Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(nums.get_desc).Font.ColorIndex
+                ws.Cells(a, RES_DESC) = rw.Cells(nums.get_desc)
+                ws.Cells(a, RES_AMOUNT) = rw.Cells(nums.get_credit)
+                ws.Cells(a, RES_ACCOUNT) = rw.Cells(nums.get_account)
+                ws.Cells(a, RES_PK) = 50
+                If ws.Cells(a, RES_ACCOUNT) = 113300 Or ws.Cells(a, RES_ACCOUNT) = 212230 Then ws.Cells(a, RES_ACCOUNT).Font.ColorIndex = 3
+                Select Case country
+                    Case TURKEY
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then
+                            ws.Cells(a, RES_PK) = 31
+                            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                            If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2413
+                        End If
+                        If ws.Cells(a, RES_ACCOUNT) Like "5*" Then
+                            ws.Cells(a, RES_TAX_CODE) = "V0"
+                            ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+                        End If
+                    Case GREECE
+                        ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then ws.Cells(a, RES_PK).Value = 31
+                        If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                        If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2413
+                        If (ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                        End If
+                        If Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                        End If
+                    Case ITALY
+                        ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+                        'ws.Cells(a, RES_TAX_CODE) = "V0"
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then
+                            ws.Cells(a, RES_PK).Value = 31
+                            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                            If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2445
+                        End If
+                End Select
+                If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                    ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                End If
+                If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                    ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                End If
+                a = a + 1
+            ElseIf IsNumeric(rw.Cells(nums.get_debit)) And rw.Cells(nums.get_debit) <> 0 Then
+    '            MsgBox "Debit!"
+                Range(ws.Cells(a, 1), ws.Cells(a, 12)).Font.ColorIndex = rw.Cells(nums.get_desc).Font.ColorIndex
+                ws.Cells(a, RES_DESC) = rw.Cells(nums.get_desc)
+                ws.Cells(a, RES_AMOUNT) = rw.Cells(nums.get_debit)
+                ws.Cells(a, RES_PK) = 40
+                ws.Cells(a, RES_ACCOUNT) = rw.Cells(nums.get_account)
+                If ws.Cells(a, RES_ACCOUNT) = 113300 Or ws.Cells(a, RES_ACCOUNT) = 212230 Then ws.Cells(a, RES_ACCOUNT).Font.ColorIndex = 3
+                Select Case country
+                    Case TURKEY
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then
+                            ws.Cells(a, RES_PK) = 21
+                            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                            If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2413
+                        End If
+                        If ws.Cells(a, RES_ACCOUNT) Like "5*" Then
+                            ws.Cells(a, RES_TAX_CODE) = "V0"
+                            ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+                        End If
+                    Case GREECE
+                        ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then ws.Cells(a, RES_PK).Value = 21
+                        If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                        If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2413
+                        If (ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                        End If
+                        If Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                            ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                        End If
+                    Case ITALY
+                        ws.Cells(a, RES_COST_CENTER) = rw.Cells(nums.get_cost_center)
+                        'ws.Cells(a, RES_TAX_CODE) = "V0"
+                        If special_account(ws.Cells(a, RES_ACCOUNT)) Then
+                            ws.Cells(a, RES_PK).Value = 21
+                            If ws.Cells(a, RES_ACCOUNT) = 212100 Or ws.Cells(a, RES_ACCOUNT) = 212110 Then ws.Cells(a, RES_ACCOUNT) = 8809
+                            If ws.Cells(a, RES_ACCOUNT) = 214401 Then ws.Cells(a, RES_ACCOUNT) = 2445
+                        End If
+                End Select
+                If (ws.Cells(a, RES_ACCOUNT) Like "6*" Or ws.Cells(a, RES_ACCOUNT) Like "5*" Or ws.Cells(a, RES_ACCOUNT) Like "4*") And IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                    ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                End If
+                If Not ws.Cells(a, RES_ACCOUNT) Like "6*" And Not ws.Cells(a, RES_ACCOUNT) Like "5*" And Not ws.Cells(a, RES_ACCOUNT) Like "4*" And Not IsEmpty(ws.Cells(a, RES_COST_CENTER)) Then
+                    ws.Cells(a, RES_COST_CENTER).Interior.ColorIndex = 3
+                End If
+                a = a + 1
+            End If
         End If
     Next rw
     
-    For Each cell In found_row.Columns
+    ActiveWorkbook.Close
+    
+End Sub
+
+Function get_prompt(country As Integer) As String
     Select Case country
         Case TURKEY
-            If InStr(1, cell, "DIALOG", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
-            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 And InStr(1, cell, "code", vbTextCompare) > 0 Then get_cost_center = cell.Column
-            If InStr(1, cell, "account", vbTextCompare) > 0 And InStr(1, cell, "name", vbTextCompare) > 0 Then get_desc = cell.Column
-        Case GREECE
-            If InStr(1, cell, "GL", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
-            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 Then get_cost_center = cell.Column
-            If InStr(1, cell, "description", vbTextCompare) > 0 And Len(cell) = Len("Description") Then get_desc = cell.Column
+            get_prompt = "Select Turkey"
         Case ITALY
-            If InStr(1, cell, "GL", vbTextCompare) > 0 And InStr(1, cell, "ACCOUNT", vbTextCompare) > 0 Then get_account = cell.Column
-            If InStr(1, cell, "cost", vbTextCompare) > 0 And InStr(1, cell, "center", vbTextCompare) > 0 Then get_cost_center = cell.Column
-            If InStr(1, cell, "description", vbTextCompare) > 0 And InStr(1, cell, "2", vbTextCompare) > 0 Then get_desc = cell.Column
-            If InStr(1, cell, "description", vbTextCompare) > 0 And InStr(1, cell, "1", vbTextCompare) > 0 Then get_alt_desc = cell.Column
+            get_prompt = "Select Italy"
+        Case GREECE
+            get_prompt = "Select Greece"
     End Select
-    Next cell
-    
-    If get_account = 0 Then MsgBox "Did not find account"
-    If get_cost_center = 0 Then MsgBox "Did not find cost center"
-    If get_desc = 0 Then MsgBox "Did not find description"
-    
 End Function
 
-Property Get get_credit() As Integer
-    get_credit = credit
-End Property
-Property Let get_credit(val As Integer)
-    credit = val
-End Property
+Sub fill_italy_vendor(ByRef account_cell As Range, ByVal desc_1 As Range, ByVal desc_2 As Range, ByRef vendors_list As Worksheet)
+    For Each vendor_row In vendors_list.rows
+        If IsEmpty(vendor_row.Cells(2)) Then
+            account_cell.Interior.ColorIndex = 6
+            Exit For
+        End If
+        If InStr(1, desc_1, vendor_row.Cells(2), vbTextCompare) > 0 Then
+            account_cell = vendor_row.Cells(1)
+            Exit For
+        ElseIf InStr(1, desc_2, vendor_row.Cells(2), vbTextCompare) > 0 Then
+            account_cell = vendor_row.Cells(1)
+            Exit For
+        End If
+    Next vendor_row
+End Sub
 
-Public Property Get get_account() As Integer
-    get_account = account
-End Property
-Public Property Let get_account(val As Integer)
-    account = val
-End Property
+Function special_account(account_number As String) As Boolean
+    If account_number = 212100 Or account_number = 212110 Or account_number = 214401 Or account_number = 212230 Or account_num = 113300 Then
+        special_account = True
+    Else
+        special_account = False
+    End If
+End Function
 
-'End Function
-'
-Public Property Get get_debit() As Integer
-    get_debit = debit
+Function special_account_turkey(account_number As String) As Boolean
+    If InStr(account_number, ".") Then
+        special_account_turkey = True
+    Else
+        special_account_turkey = False
+    End If
+End Function
+
+Function pick_file(prompt As String) As String
+    Dim filePicker As FileDialog
+
+    Set filePicker = Application.FileDialog(msoFileDialogFilePicker)
+
+    With filePicker
+
+        'setup File Dialog'
+        .AllowMultiSelect = False
+        .ButtonName = prompt
+        .InitialView = msoFileDialogViewList
+        .title = prompt
+'        .InitialFileName = ""
+
+        'add filter for all files'
+        With .Filters
+        .Clear
+        .Add "All Files", "*.xls*"
+        End With
+        .FilterIndex = 1
+
+        'display file dialog box'
+        .Show
+
+     End With
+    If filePicker.SelectedItems.Count > 0 Then
+        pick_file = filePicker.SelectedItems(1)
+    Else
+        pick_file = ""
+    End If
+
+End Function
+
+Sub ClearStatementData()
+    ' To speed up the process only used columns are cleared
+    For Each cell In Range("A13:F1000", "K13:K1000").Cells
+        cell.ClearContents
+        cell.Interior.ColorIndex = 2
+        cell.Borders.ColorIndex = 15
+        cell.Font.ColorIndex = 1
+    Next cell
+    ActiveWorkbook.Save
+    Range("A13").Select
+End Sub
+
+
+Sub dspi_test()
+    'process (TURKEY)
+    'process (GREECE)
+    process (ITALY)
+End Sub
+
+Sub SaveTurkeySub()
+    Dim objDialog As Variant
     
-End Property
-Public Property Let get_debit(val As Integer)
-    debit = val
+    objDialog = Application.GetSaveAsFilename()
     
-End Property
-'
-
-Public Property Get get_cost_center() As Integer
-    get_cost_center = cost_center
-End Property
-
-Public Property Let get_cost_center(val As Integer)
-    cost_center = val
-End Property
-'End Function
-'
-Public Property Get get_desc() As Integer
-    get_desc = desc
-End Property
-
-Public Property Let get_desc(val As Integer)
-    desc = val
-End Property
-
-Public Property Get get_alt_desc() As Integer
-    get_alt_desc = alt_desc
-End Property
-
-Public Property Let get_alt_desc(val As Integer)
-    alt_desc = val
-End Property
+    If InStr(1, objDialog, "xlsx", vbTextCompare) = 0 Then objDialog = objDialog + "xlsx"
+    
+    ActiveSheet.Range("A13:A2000").Sort key1:=Range("A13"), order1:=xlAscending
+    
+    Columns("A:A").Select
+    
+    Set cell = Selection.Find(what:="40", LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext)
+    
+    Range("A1", Cells(cell.Row - 1, 13)).Select
+    Selection.Copy
+    Workbooks.Add
+    ActiveSheet.Paste
+    ActiveSheet.Columns.AutoFit
+    If last_saved_is_turkey Then ActiveSheet.Range("E5") = "TRY" Else ActiveSheet.Range("E5") = "EUR"
+    ActiveWorkbook.SaveAs Filename:=Replace(objDialog, ".xlsx", "_21_31.xlsx"), CreateBackup:=False
+    Application.DisplayAlerts = False
+    ActiveWorkbook.Close
+    Application.DisplayAlerts = True
+    
+    Union(Range("A1:M12"), Range(Cells(cell.Row, 1), "M1000")).Select
+    Selection.Copy
+    Workbooks.Add
+    ActiveSheet.Paste
+    ActiveSheet.Columns.AutoFit
+    If last_saved_is_turkey Then ActiveSheet.Range("E5") = "TRY" Else ActiveSheet.Range("E5") = "EUR"
+    ActiveWorkbook.SaveAs Filename:=Replace(objDialog, ".xlsx", "_40_50.xlsx"), CreateBackup:=False
+    Application.DisplayAlerts = False
+    ActiveWorkbook.Close
+    Application.DisplayAlerts = True
+    
+    'Set Selection = Nothing
+End Sub
